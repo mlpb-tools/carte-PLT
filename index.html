@@ -1,0 +1,775 @@
+<!DOCTYPE html>
+<html lang="fr">
+<head>
+<meta charset="UTF-8">
+<meta name="viewport" content="width=device-width, initial-scale=1.0">
+<title>Les 4 Ateliers Pratiques – Construire ta carte de territoire</title>
+<link rel="stylesheet" href="https://unpkg.com/leaflet@1.9.4/dist/leaflet.css"/>
+<link href="https://fonts.googleapis.com/css2?family=DM+Sans:wght@300;400;500;700&family=Outfit:wght@400;700;900&display=swap" rel="stylesheet"/>
+<script src="https://unpkg.com/leaflet@1.9.4/dist/leaflet.js"></script>
+<style>
+:root {
+  --rouge:#e8173d; --vert:#6bb22e; --bleu:#2897d5; --jaune:#f7b731;
+  --noir:#171318; --gris:#f4f4f6; --blanc:#ffffff;
+  --border:#e4e4ec;
+}
+*{margin:0;padding:0;box-sizing:border-box;}
+body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);height:100vh;overflow:hidden;}
+
+/* ── LAYOUT ── */
+.app{display:flex;flex-direction:column;height:100vh;}
+.topbar{background:var(--blanc);border-bottom:1px solid var(--border);padding:0 32px;display:flex;align-items:center;gap:24px;height:56px;flex-shrink:0;}
+.topbar .logo{font-family:'Outfit',sans-serif;font-weight:900;font-size:15px;color:var(--noir);letter-spacing:-0.5px;}
+.topbar .logo span{color:var(--bleu);}
+.topbar-right{margin-left:auto;display:flex;align-items:center;gap:8px;}
+.badge-synthese{background:var(--noir);color:#fff;font-size:11px;font-weight:700;padding:4px 12px;border-radius:20px;letter-spacing:.5px;text-transform:uppercase;}
+
+.tabs-row{background:var(--blanc);border-bottom:2px solid var(--border);padding:0 32px;display:flex;gap:0;flex-shrink:0;}
+.tab{padding:14px 22px;font-size:13px;font-weight:500;color:rgba(23,19,24,.4);cursor:pointer;border-bottom:3px solid transparent;margin-bottom:-2px;transition:all .2s;white-space:nowrap;}
+.tab.active-rouge{color:var(--rouge);border-color:var(--rouge);}
+.tab.active-bleu{color:var(--bleu);border-color:var(--bleu);}
+.tab.active-vert{color:var(--vert);border-color:var(--vert);}
+.tab.active-jaune{color:#d4960a;border-color:var(--jaune);}
+.tab.active-map{color:#7c3aed;border-color:#7c3aed;}
+.tab:hover:not(.active-rouge):not(.active-bleu):not(.active-vert):not(.active-jaune):not(.active-map){color:var(--noir);}
+
+.content{flex:1;overflow:hidden;display:flex;flex-direction:column;}
+
+/* ── OVERVIEW SLIDE (ateliers) ── */
+.overview{display:none;flex:1;flex-direction:column;padding:28px 32px;gap:16px;overflow:auto;}
+.overview.active{display:flex;}
+.overview-header h1{font-family:'Outfit',sans-serif;font-weight:900;font-size:26px;letter-spacing:-1px;}
+.overview-header p{font-size:13px;color:var(--bleu);font-weight:600;margin-top:2px;}
+.atelier-cards{display:grid;grid-template-columns:repeat(4,1fr);gap:16px;flex:1;}
+.atelier-card{background:var(--blanc);border:1.5px solid var(--border);border-radius:16px;padding:20px;display:flex;flex-direction:column;gap:12px;position:relative;overflow:hidden;}
+.atelier-card::before{content:'';position:absolute;top:0;left:0;right:0;height:4px;}
+.atelier-card.c1::before{background:var(--rouge);}
+.atelier-card.c2::before{background:var(--bleu);}
+.atelier-card.c3::before{background:var(--vert);}
+.atelier-card.c4::before{background:var(--jaune);}
+.atelier-num{font-family:'Outfit',sans-serif;font-weight:900;font-size:48px;line-height:1;opacity:.08;position:absolute;top:8px;right:12px;}
+.atelier-card.c1 .atelier-num{color:var(--rouge);}
+.atelier-card.c2 .atelier-num{color:var(--bleu);}
+.atelier-card.c3 .atelier-num{color:var(--vert);}
+.atelier-card.c4 .atelier-num{color:var(--jaune);}
+.atelier-title{font-family:'Outfit',sans-serif;font-weight:700;font-size:15px;line-height:1.3;position:relative;}
+.atelier-card.c1 .atelier-title{color:var(--rouge);}
+.atelier-card.c2 .atelier-title{color:var(--bleu);}
+.atelier-card.c3 .atelier-title{color:var(--vert);}
+.atelier-card.c4 .atelier-title{color:#d4960a;}
+.atelier-action{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(23,19,24,.4);margin-top:2px;}
+.items-list{list-style:none;display:flex;flex-direction:column;gap:5px;flex:1;}
+.items-list li{font-size:12.5px;color:rgba(23,19,24,.65);padding-left:12px;position:relative;line-height:1.45;}
+.items-list li::before{content:'·';position:absolute;left:0;color:rgba(23,19,24,.3);}
+.result-tag{margin-top:auto;font-size:11px;font-weight:700;padding:5px 10px;border-radius:8px;display:inline-flex;align-items:center;gap:5px;}
+.atelier-card.c1 .result-tag{background:rgba(232,23,61,.08);color:var(--rouge);}
+.atelier-card.c2 .result-tag{background:rgba(40,151,213,.08);color:var(--bleu);}
+.atelier-card.c3 .result-tag{background:rgba(107,178,46,.08);color:var(--vert);}
+.atelier-card.c4 .result-tag{background:rgba(247,183,49,.12);color:#c9860c;}
+
+.legend-bar{background:var(--noir);border-radius:12px;padding:12px 20px;display:flex;align-items:center;gap:6px;flex-wrap:wrap;}
+.legend-bar span{font-size:11px;font-weight:500;color:#fff;}
+.legend-bar .lbl{display:flex;align-items:center;gap:6px;padding:0 12px;}
+.dot{width:8px;height:8px;border-radius:50%;}
+
+/* ── DETAIL SLIDE ── */
+.detail{display:none;flex:1;flex-direction:column;padding:28px 32px;gap:20px;overflow:auto;}
+.detail.active{display:flex;}
+.detail-header{display:flex;align-items:flex-start;gap:16px;}
+.detail-num{font-family:'Outfit',sans-serif;font-weight:900;font-size:72px;line-height:1;opacity:.12;}
+.detail-info h2{font-family:'Outfit',sans-serif;font-weight:900;font-size:22px;letter-spacing:-0.5px;}
+.detail-info p{font-size:13px;margin-top:4px;opacity:.6;}
+.detail-body{display:grid;grid-template-columns:1fr 1fr;gap:16px;flex:1;}
+.detail-block{background:var(--blanc);border:1.5px solid var(--border);border-radius:14px;padding:18px;}
+.detail-block h3{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.8px;opacity:.4;margin-bottom:10px;}
+.detail-block ul{list-style:none;display:flex;flex-direction:column;gap:6px;}
+.detail-block li{font-size:13px;padding-left:14px;position:relative;line-height:1.5;}
+.detail-block li::before{content:'→';position:absolute;left:0;opacity:.3;font-size:10px;top:3px;}
+
+/* ── MAP SLIDE ── */
+.map-slide{display:none;flex:1;flex-direction:row;overflow:hidden;}
+.map-slide.active{display:flex;}
+
+/* Fiche consignes */
+.consignes-panel{width:320px;flex-shrink:0;background:var(--blanc);border-right:1.5px solid var(--border);overflow-y:auto;display:flex;flex-direction:column;}
+.consignes-header{padding:20px 20px 12px;border-bottom:1px solid var(--border);}
+.consignes-header h2{font-family:'Outfit',sans-serif;font-weight:900;font-size:16px;letter-spacing:-0.3px;color:#7c3aed;}
+.consignes-header p{font-size:12px;color:rgba(23,19,24,.5);margin-top:3px;}
+.consignes-body{padding:16px 20px;display:flex;flex-direction:column;gap:14px;flex:1;}
+.consigne-step{display:flex;gap:12px;align-items:flex-start;}
+.consigne-step .step-num{width:28px;height:28px;border-radius:50%;display:flex;align-items:center;justify-content:center;font-family:'Outfit',sans-serif;font-weight:900;font-size:13px;flex-shrink:0;margin-top:1px;}
+.consigne-step:nth-child(1) .step-num{background:rgba(232,23,61,.1);color:var(--rouge);}
+.consigne-step:nth-child(2) .step-num{background:rgba(40,151,213,.1);color:var(--bleu);}
+.consigne-step:nth-child(3) .step-num{background:rgba(107,178,46,.1);color:var(--vert);}
+.consigne-step:nth-child(4) .step-num{background:rgba(247,183,49,.15);color:#c9860c;}
+.consigne-step:nth-child(5) .step-num{background:rgba(124,58,237,.1);color:#7c3aed;}
+.consigne-step .step-content h4{font-size:13px;font-weight:700;margin-bottom:3px;}
+.consigne-step .step-content p{font-size:12px;color:rgba(23,19,24,.55);line-height:1.5;}
+.cat-legend{margin-top:4px;}
+.cat-legend h4{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(23,19,24,.4);margin-bottom:8px;}
+.cat-item{display:flex;align-items:center;gap:8px;padding:5px 0;border-bottom:1px solid var(--border);}
+.cat-item:last-child{border-bottom:none;}
+.cat-dot{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.cat-item span{font-size:12px;color:rgba(23,19,24,.7);}
+.btn-add-pin{margin:0 20px 20px;background:var(--noir);color:#fff;border:none;border-radius:10px;padding:12px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .2s;display:flex;align-items:center;gap:8px;justify-content:center;}
+.btn-add-pin:hover{opacity:.85;}
+
+/* Map */
+#map-container{flex:1;position:relative;}
+#map{width:100%;height:100%;}
+.map-counter{position:absolute;top:12px;right:12px;z-index:1000;background:var(--blanc);border:1.5px solid var(--border);border-radius:10px;padding:8px 14px;font-size:12px;font-weight:600;display:flex;align-items:center;gap:6px;box-shadow:0 2px 8px rgba(0,0,0,.06);}
+
+/* ── MODAL ── */
+.pin-modal{display:none;position:fixed;inset:0;background:rgba(23,19,24,.45);z-index:9999;align-items:center;justify-content:center;backdrop-filter:blur(3px);}
+.pin-modal.open{display:flex;}
+.pin-box{background:#fff;border-radius:18px;width:440px;max-width:94vw;box-shadow:0 24px 60px rgba(0,0,0,.18);overflow:hidden;}
+.pin-box-head{padding:20px 24px 0;display:flex;align-items:center;gap:0;border-bottom:1.5px solid var(--border);}
+.wiz-tab{font-size:13px;font-weight:700;padding:0 0 16px;margin-right:20px;border-bottom:3px solid transparent;cursor:pointer;transition:all .2s;}
+.pin-box-head .close-btn{margin-left:auto;width:30px;height:30px;border-radius:50%;border:none;background:var(--gris);cursor:pointer;font-size:16px;display:flex;align-items:center;justify-content:center;margin-bottom:12px;}
+.pin-body{padding:20px 24px 24px;}
+.field-label{font-size:11px;font-weight:700;text-transform:uppercase;letter-spacing:.5px;color:rgba(23,19,24,.4);margin-bottom:6px;display:block;}
+.field-input{width:100%;border:1.5px solid var(--border);border-radius:10px;padding:10px 14px;font-family:'DM Sans',sans-serif;font-size:14px;outline:none;transition:border-color .2s;}
+.field-input:focus{border-color:var(--bleu);}
+.field-input::placeholder{color:rgba(23,19,24,.3);}
+.cat-grid{display:grid;grid-template-columns:1fr 1fr;gap:8px;margin-top:4px;}
+.cat-opt{border:1.5px solid var(--border);border-radius:10px;padding:10px 12px;cursor:pointer;font-size:12.5px;font-weight:600;transition:all .2s;display:flex;align-items:center;gap:8px;}
+.cat-opt:hover{border-color:rgba(23,19,24,.3);}
+.cat-opt.selected{border-color:currentColor;background:rgba(0,0,0,.03);}
+.cat-opt .cdog{width:10px;height:10px;border-radius:50%;flex-shrink:0;}
+.error-msg{font-size:11px;color:var(--rouge);margin-top:5px;display:none;}
+.btn-row{display:flex;gap:8px;margin-top:18px;}
+.btn-primary{flex:1;background:var(--noir);color:#fff;border:none;border-radius:10px;padding:12px;font-family:'DM Sans',sans-serif;font-weight:700;font-size:13px;cursor:pointer;transition:opacity .2s;}
+.btn-primary:hover{opacity:.85;}
+.btn-secondary{background:var(--gris);color:var(--noir);border:none;border-radius:10px;padding:12px 16px;font-family:'DM Sans',sans-serif;font-weight:600;font-size:13px;cursor:pointer;}
+.step2-resume{border:1.5px solid var(--border);border-radius:10px;padding:12px 14px;margin-bottom:14px;display:flex;align-items:center;gap:10px;}
+.step2-resume .r-dot{width:12px;height:12px;border-radius:50%;}
+.step2-resume .r-name{font-weight:700;font-size:13px;}
+.step2-resume .r-cat{font-size:12px;color:rgba(23,19,24,.45);margin-left:auto;}
+.addr-row{display:flex;gap:8px;}
+.addr-row .field-input{flex:1;}
+.btn-search-addr{background:var(--bleu);color:#fff;border:none;border-radius:10px;padding:10px 14px;font-weight:700;font-size:13px;cursor:pointer;white-space:nowrap;}
+.addr-results{display:none;border:1.5px solid var(--border);border-radius:10px;margin-top:6px;overflow:hidden;max-height:160px;overflow-y:auto;}
+.addr-row-item{padding:10px 14px;cursor:pointer;font-size:13px;border-bottom:1px solid var(--border);transition:background .15s;}
+.addr-row-item:last-child{border-bottom:none;}
+.addr-row-item:hover{background:var(--gris);}
+.addr-error{font-size:11px;color:var(--rouge);margin-top:5px;display:none;}
+.wiz-pos-confirm{background:rgba(107,178,46,.08);border:1.5px solid rgba(107,178,46,.3);border-radius:10px;padding:10px 14px;font-size:12px;color:var(--vert);margin-top:10px;display:none;}
+.map-instruction{display:none;background:rgba(124,58,237,.08);border:1.5px solid rgba(124,58,237,.2);border-radius:10px;padding:10px 14px;font-size:12px;color:#7c3aed;margin-top:8px;}
+</style>
+</head>
+<body>
+<div class="app">
+
+<!-- TOPBAR -->
+<div class="topbar">
+  <div class="logo">territoire<span>4U</span></div>
+  <div style="font-size:12px;color:rgba(23,19,24,.4);font-weight:500;">Mission Locale Pays Basque</div>
+  <div class="topbar-right">
+    <div class="badge-synthese">Synthèse finale : Ta carte projet</div>
+  </div>
+</div>
+
+<!-- TABS -->
+<div class="tabs-row">
+  <div class="tab active-rouge" data-tab="overview" onclick="goTab('overview',this,'active-rouge')">Les 4 Ateliers</div>
+  <div class="tab" data-tab="a1" onclick="goTab('a1',this,'active-rouge')">01 · Qui je connais</div>
+  <div class="tab" data-tab="a2" onclick="goTab('a2',this,'active-bleu')">02 · Ce que je sais faire</div>
+  <div class="tab" data-tab="a3" onclick="goTab('a3',this,'active-vert')">03 · Mes solutions</div>
+  <div class="tab" data-tab="a4" onclick="goTab('a4',this,'active-jaune')">04 · Là où je me ressource</div>
+  <div class="tab" data-tab="map" onclick="goTab('map',this,'active-map')">📍 Ma carte</div>
+</div>
+
+<!-- ── OVERVIEW ── -->
+<div class="content">
+<div class="overview active" id="tab-overview">
+  <div class="overview-header">
+    <h1>Les 4 Ateliers Pratiques</h1>
+    <p>Construire ta carte de territoire</p>
+  </div>
+  <div class="atelier-cards">
+
+    <div class="atelier-card c1">
+      <div class="atelier-num">01</div>
+      <div>
+        <div class="atelier-title">Qui je connais /<br>Qui me connaît</div>
+        <div class="atelier-action">Ajoute :</div>
+      </div>
+      <ul class="items-list">
+        <li>Lieux où tu es à l'aise</li>
+        <li>Personnes qui te connaissent</li>
+      </ul>
+      <div class="result-tag">✔ RÉSULTAT : 3 personnes/lieux contactables</div>
+    </div>
+
+    <div class="atelier-card c2">
+      <div class="atelier-num">02</div>
+      <div>
+        <div class="atelier-title">Ce que je sais faire ici</div>
+        <div class="atelier-action">Ajoute :</div>
+      </div>
+      <ul class="items-list">
+        <li>Lieux où tu as travaillé / appris / aidé</li>
+        <li>Compétences concrètes liées</li>
+      </ul>
+      <div class="result-tag">✔ RÉSULTAT : 5 compétences claires</div>
+    </div>
+
+    <div class="atelier-card c3">
+      <div class="atelier-num">03</div>
+      <div>
+        <div class="atelier-title">Mes solutions concrètes</div>
+        <div class="atelier-action">Détaille :</div>
+      </div>
+      <ul class="items-list">
+        <li>Transport (Horaires, Plan B)</li>
+        <li>Repas (Coût, Lieux)</li>
+        <li>Papiers (Démarches)</li>
+      </ul>
+      <div class="result-tag">✔ RÉSULTAT : 1 organisation du quotidien</div>
+    </div>
+
+    <div class="atelier-card c4">
+      <div class="atelier-num">04</div>
+      <div>
+        <div class="atelier-title">Là où je me ressource</div>
+        <div class="atelier-action">Identifie :</div>
+      </div>
+      <ul class="items-list">
+        <li>Santé / Écoute</li>
+        <li>Ressourcement</li>
+        <li>Personnes de confiance</li>
+      </ul>
+      <div class="result-tag">✔ RÉSULTAT : 3 solutions immédiates</div>
+    </div>
+
+  </div>
+  <div class="legend-bar">
+    <span style="opacity:.5;font-size:12px;">Ta carte projet doit montrer :</span>
+    <div class="lbl"><div class="dot" style="background:var(--rouge)"></div><span>Ton réseau humain</span></div>
+    <div class="lbl"><div class="dot" style="background:var(--bleu)"></div><span>Tes compétences</span></div>
+    <div class="lbl"><div class="dot" style="background:var(--vert)"></div><span>Tes solutions pratiques</span></div>
+    <div class="lbl"><div class="dot" style="background:var(--jaune)"></div><span>Tes appuis de maintien</span></div>
+  </div>
+</div>
+
+<!-- ── DETAIL A1 ── -->
+<div class="detail" id="tab-a1">
+  <div class="detail-header">
+    <div class="detail-num" style="color:var(--rouge)">01</div>
+    <div class="detail-info">
+      <h2 style="color:var(--rouge)">Qui je connais / Qui me connaît</h2>
+      <p>Ton réseau humain visible sur le territoire</p>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-block">
+      <h3>Ce que tu vas identifier</h3>
+      <ul>
+        <li>Les lieux où tu te sens à l'aise et reconnu·e</li>
+        <li>Les personnes qui savent qui tu es (voisins, commerçants, bénévoles…)</li>
+        <li>Les endroits où tu vas régulièrement</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Comment l'ajouter sur ta carte</h3>
+      <ul>
+        <li>Ouvre l'onglet <strong>📍 Ma carte</strong></li>
+        <li>Clique sur <strong>+ Poser un pin</strong></li>
+        <li>Choisis la catégorie <span style="color:var(--rouge);font-weight:700">Réseau humain</span></li>
+        <li>Tape le nom du lieu et confirme sa position</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Questions pour t'aider</h3>
+      <ul>
+        <li>Y a-t-il un endroit où les gens te disent bonjour ?</li>
+        <li>Qui appelles-tu si tu as un problème urgent ?</li>
+        <li>Où te sens-tu "chez toi" sur ce territoire ?</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Résultat attendu</h3>
+      <ul>
+        <li>Au moins <strong>3 pins rouge</strong> placés sur la carte</li>
+        <li>Pour chaque pin : nom de la personne ou du lieu + note courte</li>
+        <li>Objectif : visualiser ton ancrage humain concret</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL A2 ── -->
+<div class="detail" id="tab-a2">
+  <div class="detail-header">
+    <div class="detail-num" style="color:var(--bleu)">02</div>
+    <div class="detail-info">
+      <h2 style="color:var(--bleu)">Ce que je sais faire ici</h2>
+      <p>Tes compétences ancrées dans des lieux réels</p>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-block">
+      <h3>Ce que tu vas identifier</h3>
+      <ul>
+        <li>Les lieux où tu as travaillé, même brièvement</li>
+        <li>Là où tu as appris quelque chose (école, stage, bénévolat…)</li>
+        <li>Les endroits où tu as aidé ou accompli quelque chose</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Comment l'ajouter sur ta carte</h3>
+      <ul>
+        <li>Ouvre l'onglet <strong>📍 Ma carte</strong></li>
+        <li>Choisis la catégorie <span style="color:var(--bleu);font-weight:700">Compétences</span></li>
+        <li>Écris dans la note : ce que tu y as appris ou fait</li>
+        <li>Vise au moins 5 pins bleus</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Questions pour t'aider</h3>
+      <ul>
+        <li>Qu'est-ce que tu sais faire que peu de gens savent ?</li>
+        <li>Où as-tu été utile ces 12 derniers mois ?</li>
+        <li>Quelle compétence viens-tu d'apprendre ?</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Résultat attendu</h3>
+      <ul>
+        <li>Au moins <strong>5 pins bleus</strong> sur la carte</li>
+        <li>Chaque pin = 1 lieu + 1 compétence concrète identifiée</li>
+        <li>Objectif : ton CV géographique et vivant</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL A3 ── -->
+<div class="detail" id="tab-a3">
+  <div class="detail-header">
+    <div class="detail-num" style="color:var(--vert)">03</div>
+    <div class="detail-info">
+      <h2 style="color:var(--vert)">Mes solutions concrètes</h2>
+      <p>L'organisation pratique de ton quotidien</p>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-block">
+      <h3>Ce que tu vas identifier</h3>
+      <ul>
+        <li>Arrêts de bus / gares / points covoiturage (Transport)</li>
+        <li>Épiceries solidaires, restaurants sociaux, cuisines collectives</li>
+        <li>Mairies, CAF, Mission Locale, CCAS (Démarches)</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Comment l'ajouter sur ta carte</h3>
+      <ul>
+        <li>Ouvre l'onglet <strong>📍 Ma carte</strong></li>
+        <li>Choisis <span style="color:var(--vert);font-weight:700">Solutions pratiques</span></li>
+        <li>Note l'horaire, le coût ou le contact dans la note</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Questions pour t'aider</h3>
+      <ul>
+        <li>Comment tu vas au travail si tu rates le bus ?</li>
+        <li>Où tu manges quand tu n'as pas le temps de cuisiner ?</li>
+        <li>Qui t'aide pour remplir des papiers importants ?</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Résultat attendu</h3>
+      <ul>
+        <li>1 organisation du quotidien complète sur la carte</li>
+        <li>Pins verts = tes solutions anti-galère validées</li>
+        <li>Objectif : sécuriser la logistique de ton projet</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── DETAIL A4 ── -->
+<div class="detail" id="tab-a4">
+  <div class="detail-header">
+    <div class="detail-num" style="color:var(--jaune)">04</div>
+    <div class="detail-info">
+      <h2 style="color:#c9860c">Là où je me ressource</h2>
+      <p>Tes appuis de maintien dans le projet</p>
+    </div>
+  </div>
+  <div class="detail-body">
+    <div class="detail-block">
+      <h3>Ce que tu vas identifier</h3>
+      <ul>
+        <li>Lieux de soins et d'écoute (médecin, psy, infirmier…)</li>
+        <li>Associations, clubs, espaces culturels ou sportifs</li>
+        <li>Personnes ou lieux de confiance inconditionnelle</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Comment l'ajouter sur ta carte</h3>
+      <ul>
+        <li>Ouvre l'onglet <strong>📍 Ma carte</strong></li>
+        <li>Choisis <span style="color:#c9860c;font-weight:700">Appuis de maintien</span></li>
+        <li>Ce sont tes ressources invisibles mais essentielles</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Questions pour t'aider</h3>
+      <ul>
+        <li>Où vas-tu quand ça ne va pas ?</li>
+        <li>Qui peut t'encourager sans te juger ?</li>
+        <li>Quel endroit te recharge quand tu es épuisé·e ?</li>
+      </ul>
+    </div>
+    <div class="detail-block">
+      <h3>Résultat attendu</h3>
+      <ul>
+        <li>Au moins <strong>3 pins jaunes</strong> sur la carte</li>
+        <li>Objectif : ne jamais te retrouver seul·e face à un obstacle</li>
+        <li>Ces ressources sont la base de ta stabilité dans le projet</li>
+      </ul>
+    </div>
+  </div>
+</div>
+
+<!-- ── MAP SLIDE ── -->
+<div class="map-slide" id="tab-map">
+
+  <!-- Fiche consignes -->
+  <div class="consignes-panel">
+    <div class="consignes-header">
+      <h2>📍 Ta carte de territoire</h2>
+      <p>Construis-la pas à pas</p>
+    </div>
+    <div class="consignes-body">
+
+      <div class="consigne-step">
+        <div class="step-num">1</div>
+        <div class="step-content">
+          <h4>Cherche un lieu</h4>
+          <p>Tape une adresse ou un nom de lieu dans la barre de recherche du formulaire, ou clique directement sur la carte.</p>
+        </div>
+      </div>
+
+      <div class="consigne-step">
+        <div class="step-num">2</div>
+        <div class="step-content">
+          <h4>Donne un nom</h4>
+          <p>Écris le nom de la personne, du lieu ou de la ressource que tu veux ajouter (ex : "Chez mamie", "Arrêt Txik Txak").</p>
+        </div>
+      </div>
+
+      <div class="consigne-step">
+        <div class="step-num">3</div>
+        <div class="step-content">
+          <h4>Choisis une catégorie</h4>
+          <p>Sélectionne la catégorie qui correspond à l'atelier en cours.</p>
+          <div class="cat-legend" style="margin-top:10px;">
+            <div class="cat-item"><div class="cat-dot" style="background:var(--rouge)"></div><span>Réseau humain (Atelier 01)</span></div>
+            <div class="cat-item"><div class="cat-dot" style="background:var(--bleu)"></div><span>Compétences (Atelier 02)</span></div>
+            <div class="cat-item"><div class="cat-dot" style="background:var(--vert)"></div><span>Solutions pratiques (Atelier 03)</span></div>
+            <div class="cat-item"><div class="cat-dot" style="background:var(--jaune)"></div><span>Appuis de maintien (Atelier 04)</span></div>
+          </div>
+        </div>
+      </div>
+
+      <div class="consigne-step">
+        <div class="step-num">4</div>
+        <div class="step-content">
+          <h4>Ajoute une note (optionnel)</h4>
+          <p>Précise : une compétence, un horaire, un contact ou une raison personnelle.</p>
+        </div>
+      </div>
+
+      <div class="consigne-step">
+        <div class="step-num">5</div>
+        <div class="step-content">
+          <h4>Confirme la position</h4>
+          <p>Utilise la recherche d'adresse ou clique sur la carte pour poser ton pin au bon endroit.</p>
+        </div>
+      </div>
+
+    </div>
+    <button class="btn-add-pin" onclick="openAddPin()">＋ &nbsp;Poser un pin</button>
+  </div>
+
+  <!-- Carte -->
+  <div id="map-container">
+    <div id="map"></div>
+    <div class="map-counter" id="map-counter">
+      <span style="color:rgba(23,19,24,.4);font-size:11px;">Pins posés :</span>
+      <span id="pin-count" style="font-family:'Outfit',sans-serif;font-weight:900;">0</span>
+    </div>
+  </div>
+
+</div>
+</div><!-- /content -->
+
+<!-- ── MODAL WIZARD ── -->
+<div class="pin-modal" id="pin-modal">
+  <div class="pin-box">
+    <div class="pin-box-head">
+      <div class="wiz-tab" id="wiz-step1-tab" onclick="showStep(1)">① Infos du pin</div>
+      <div class="wiz-tab" id="wiz-step2-tab" onclick="if(canGoStep2())showStep(2)">② Position</div>
+      <button class="close-btn" onclick="closeAddPin()">×</button>
+    </div>
+
+    <!-- Step 1 -->
+    <div class="pin-body" id="wiz-step1">
+      <label class="field-label">Nom du lieu ou de la personne</label>
+      <input class="field-input" id="pin-name" type="text" placeholder="Ex : Mairie de Bayonne, Chez Lucie…" oninput="this.style.borderColor=''" onkeydown="if(event.key==='Enter')wizNext()"/>
+
+      <label class="field-label" style="margin-top:14px;">Note (optionnel)</label>
+      <input class="field-input" id="pin-note" type="text" placeholder="Horaire, compétence, contact…"/>
+
+      <label class="field-label" style="margin-top:14px;">Catégorie</label>
+      <div class="cat-grid" id="cat-grid">
+        <div class="cat-opt" data-val="reseau" onclick="selectCat(this)" style="color:var(--rouge)">
+          <div class="cdog" style="background:var(--rouge)"></div>Réseau humain
+        </div>
+        <div class="cat-opt" data-val="comp" onclick="selectCat(this)" style="color:var(--bleu)">
+          <div class="cdog" style="background:var(--bleu)"></div>Compétences
+        </div>
+        <div class="cat-opt" data-val="solutions" onclick="selectCat(this)" style="color:var(--vert)">
+          <div class="cdog" style="background:var(--vert)"></div>Solutions pratiques
+        </div>
+        <div class="cat-opt" data-val="appuis" onclick="selectCat(this)" style="color:#c9860c">
+          <div class="cdog" style="background:var(--jaune)"></div>Appuis de maintien
+        </div>
+      </div>
+      <div class="error-msg" id="cat-error">Sélectionne une catégorie.</div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="closeAddPin()">Annuler</button>
+        <button class="btn-primary" onclick="wizNext()">Suivant →</button>
+      </div>
+    </div>
+
+    <!-- Step 2 -->
+    <div class="pin-body" id="wiz-step2" style="display:none;">
+      <div class="step2-resume" id="wiz-resume">
+        <div class="r-dot" id="wiz-resume-dot"></div>
+        <span class="r-name" id="wiz-resume-name"></span>
+        <span class="r-cat" id="wiz-resume-cat"></span>
+      </div>
+      <label class="field-label">Rechercher une adresse</label>
+      <div class="addr-row">
+        <input class="field-input" id="addr-search" type="text" placeholder="Ex : 15 rue Victor Hugo, Bayonne" onkeydown="if(event.key==='Enter')searchAddr()"/>
+        <button class="btn-search-addr" onclick="searchAddr()">Chercher</button>
+      </div>
+      <div class="addr-error" id="addr-error">Adresse introuvable, réessaie ou clique sur la carte.</div>
+      <div class="addr-results" id="addr-results"></div>
+      <div class="wiz-pos-confirm" id="wiz-pos-confirm"></div>
+      <div class="map-instruction" id="map-instruction" style="display:block;">🖱️ Tu peux aussi cliquer directement sur la carte pour positionner ton pin.</div>
+      <div class="btn-row">
+        <button class="btn-secondary" onclick="wizBack()">← Retour</button>
+        <button class="btn-primary" onclick="confirmAddPin()">Poser le pin ici ✓</button>
+      </div>
+    </div>
+  </div>
+</div>
+
+<script>
+// ── TABS ──
+function goTab(id, el, activeClass) {
+  document.querySelectorAll('.overview,.detail,.map-slide').forEach(x=>{
+    x.classList.remove('active');
+    x.style.display='';
+  });
+  document.querySelectorAll('.tab').forEach(t=>{
+    t.className='tab';
+  });
+  var target = document.getElementById('tab-'+id);
+  if(target){
+    if(id==='overview') target.style.display='flex';
+    else if(id==='map') target.style.display='flex';
+    else target.style.display='flex';
+    target.classList.add('active');
+  }
+  el.classList.add(activeClass);
+  if(id==='map'){
+    setTimeout(function(){
+      initMap();
+      if(map) map.invalidateSize();
+    },120);
+  }
+}
+
+// ── MAP ──
+var map=null, pins=[], pendingLatLng=null, selectedCat=null, wizardStep=1;
+var pinCount=0;
+
+var CAT_COLORS={reseau:'#e8173d',comp:'#2897d5',solutions:'#6bb22e',appuis:'#f7b731'};
+var CAT_LABELS={reseau:'Réseau humain',comp:'Compétences',solutions:'Solutions pratiques',appuis:'Appuis de maintien'};
+
+function initMap(){
+  if(map) return;
+  map = L.map('map',{zoomControl:true}).setView([43.49,-1.47],11);
+  L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',{
+    maxZoom:19,
+    attribution:'© OpenStreetMap France'
+  }).addTo(map);
+  map.on('click',function(e){
+    pendingLatLng=e.latlng;
+    if(wizardStep===2){
+      var c=document.getElementById('wiz-pos-confirm');
+      c.style.display='block';
+      c.textContent='Position sélectionnée sur la carte — clique sur "Poser le pin ici" pour confirmer.';
+    }
+  });
+}
+
+function makePinIcon(color){
+  return L.divIcon({
+    className:'',
+    html:'<div style="width:18px;height:18px;background:'+color+';border-radius:50% 50% 50% 0;transform:rotate(-45deg);border:2.5px solid #fff;box-shadow:0 2px 6px rgba(0,0,0,.25);"></div>',
+    iconSize:[18,18],iconAnchor:[9,18],popupAnchor:[0,-20]
+  });
+}
+
+function addPin(name,cat,note,latlng){
+  if(!map) return;
+  var color=CAT_COLORS[cat]||'#888';
+  var label=CAT_LABELS[cat]||cat;
+  var m=L.marker(latlng,{icon:makePinIcon(color)}).addTo(map);
+  var popHtml='<div style="font-family:DM Sans,sans-serif;min-width:160px;">'
+    +'<div style="font-weight:700;font-size:14px;margin-bottom:4px;">'+name+'</div>'
+    +'<div style="display:flex;align-items:center;gap:6px;margin-bottom:'+(note?'6px':'0')+';">'
+    +'<div style="width:8px;height:8px;border-radius:50%;background:'+color+'"></div>'
+    +'<span style="font-size:11px;color:rgba(23,19,24,.5);">'+label+'</span></div>'
+    +(note?'<div style="font-size:12px;color:rgba(23,19,24,.65);">'+note+'</div>':'')
+    +'</div>';
+  m.bindPopup(popHtml,{maxWidth:240,closeButton:true});
+  pins.push({name,cat,note,latlng,marker:m});
+  pinCount++;
+  document.getElementById('pin-count').textContent=pinCount;
+}
+
+// ── ADDR SEARCH ──
+function searchAddr(){
+  var q=document.getElementById('addr-search').value.trim();
+  if(!q) return;
+  var url='https://nominatim.openstreetmap.org/search?format=json&q='+encodeURIComponent(q)+'&limit=5&countrycodes=fr';
+  document.getElementById('addr-error').style.display='none';
+  fetch(url,{headers:{'Accept-Language':'fr'}})
+    .then(function(r){return r.json();})
+    .then(function(data){
+      var res=document.getElementById('addr-results');
+      if(!data||data.length===0){
+        res.style.display='none';
+        document.getElementById('addr-error').style.display='block';
+        return;
+      }
+      res.innerHTML=''; res.style.display='block';
+      data.forEach(function(item){
+        var row=document.createElement('div');
+        row.className='addr-row-item';
+        var mainLabel=item.display_name.split(',').slice(0,3).join(', ');
+        row.textContent=mainLabel;
+        row.onclick=function(){
+          pendingLatLng=L.latLng(parseFloat(item.lat),parseFloat(item.lon));
+          res.style.display='none';
+          if(map) map.setView(pendingLatLng,15,{animate:true});
+          var c=document.getElementById('wiz-pos-confirm');
+          c.style.display='block';
+          c.textContent='Adresse trouvée : '+mainLabel+' — clique sur "Poser le pin ici" pour confirmer.';
+        };
+        res.appendChild(row);
+      });
+    })
+    .catch(function(){
+      document.getElementById('addr-error').style.display='block';
+    });
+}
+
+// ── WIZARD ──
+function openAddPin(){
+  wizardStep=1; selectedCat=null;
+  document.getElementById('pin-name').value='';
+  document.getElementById('pin-note').value='';
+  document.getElementById('addr-search').value='';
+  document.getElementById('addr-results').style.display='none';
+  document.getElementById('addr-error').style.display='none';
+  document.getElementById('wiz-pos-confirm').style.display='none';
+  document.getElementById('cat-error').style.display='none';
+  document.querySelectorAll('.cat-opt').forEach(function(o){o.classList.remove('selected');});
+  showStep(1);
+  document.getElementById('pin-modal').classList.add('open');
+  setTimeout(function(){document.getElementById('pin-name').focus();},80);
+}
+
+function closeAddPin(){
+  document.getElementById('pin-modal').classList.remove('open');
+  pendingLatLng=null; wizardStep=1;
+  if(map) map.getContainer().style.cursor='';
+}
+
+function showStep(n){
+  wizardStep=n;
+  document.getElementById('wiz-step1').style.display=n===1?'block':'none';
+  document.getElementById('wiz-step2').style.display=n===2?'block':'none';
+  document.getElementById('wiz-step1-tab').style.borderBottom=n===1?'3px solid var(--rouge)':'3px solid transparent';
+  document.getElementById('wiz-step1-tab').style.color=n===1?'var(--rouge)':'rgba(23,19,24,.3)';
+  document.getElementById('wiz-step2-tab').style.borderBottom=n===2?'3px solid #7c3aed':'3px solid transparent';
+  document.getElementById('wiz-step2-tab').style.color=n===2?'#7c3aed':'rgba(23,19,24,.3)';
+  if(map) map.getContainer().style.cursor=n===2?'crosshair':'';
+}
+
+function canGoStep2(){
+  var name=document.getElementById('pin-name').value.trim();
+  return name&&selectedCat;
+}
+
+function wizNext(){
+  var name=document.getElementById('pin-name').value.trim();
+  if(!name){
+    var inp=document.getElementById('pin-name');
+    inp.style.borderColor='var(--rouge)'; inp.focus(); return;
+  }
+  if(!selectedCat){
+    document.getElementById('cat-error').style.display='block'; return;
+  }
+  var color=CAT_COLORS[selectedCat];
+  var label=CAT_LABELS[selectedCat];
+  document.getElementById('wiz-resume-dot').style.background=color;
+  document.getElementById('wiz-resume-name').textContent=name;
+  document.getElementById('wiz-resume-cat').textContent=label;
+  document.getElementById('wiz-resume').style.borderColor=color;
+  document.getElementById('wiz-pos-confirm').style.display='none';
+  var addrInput=document.getElementById('addr-search');
+  if(!addrInput.value) addrInput.value=name;
+  showStep(2);
+  setTimeout(function(){addrInput.select();addrInput.focus();},80);
+}
+
+function wizBack(){ showStep(1); }
+
+function selectCat(el){
+  document.querySelectorAll('.cat-opt').forEach(function(o){o.classList.remove('selected');});
+  el.classList.add('selected');
+  selectedCat=el.dataset.val;
+  document.getElementById('cat-error').style.display='none';
+}
+
+function confirmAddPin(){
+  var name=document.getElementById('pin-name').value.trim();
+  var note=document.getElementById('pin-note').value.trim();
+  if(!name||!selectedCat) return;
+  var latlng=pendingLatLng||(map?map.getCenter():L.latLng(43.49,-1.47));
+  addPin(name,selectedCat,note,latlng);
+  closeAddPin();
+  if(map) map.setView(latlng,Math.max(map.getZoom(),14),{animate:true});
+}
+
+document.addEventListener('keydown',function(e){
+  if(e.key==='Escape') closeAddPin();
+});
+
+// Clic en dehors du modal
+document.getElementById('pin-modal').addEventListener('click',function(e){
+  if(e.target===this) closeAddPin();
+});
+</script>
+</body>
+</html>

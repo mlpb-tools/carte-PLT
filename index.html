@@ -160,7 +160,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
 <body>
 <div class="app">
 
-<!-- TOPBAR -->
 <div class="topbar">
   <div class="logo">territoire<span>4U</span></div>
   <div style="font-size:12px;color:rgba(23,19,24,.4);font-weight:500;">Mission Locale Pays Basque</div>
@@ -169,7 +168,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   </div>
 </div>
 
-<!-- TABS -->
 <div class="tabs-row">
   <div class="tab active-rouge" data-tab="overview" onclick="goTab('overview',this,'active-rouge')">Les 4 Ateliers</div>
   <div class="tab" data-tab="a1" onclick="goTab('a1',this,'active-rouge')">01 · Qui je connais</div>
@@ -179,7 +177,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   <div class="tab" data-tab="map" onclick="goTab('map',this,'active-map')">📍 Ma carte</div>
 </div>
 
-<!-- ── OVERVIEW ── -->
 <div class="content">
 <div class="overview active" id="tab-overview">
   <div class="overview-header">
@@ -252,7 +249,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   </div>
 </div>
 
-<!-- ── DETAIL A1 ── -->
 <div class="detail" id="tab-a1">
   <div class="detail-header">
     <div class="detail-num" style="color:var(--rouge)">01</div>
@@ -298,7 +294,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   </div>
 </div>
 
-<!-- ── DETAIL A2 ── -->
 <div class="detail" id="tab-a2">
   <div class="detail-header">
     <div class="detail-num" style="color:var(--bleu)">02</div>
@@ -344,7 +339,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   </div>
 </div>
 
-<!-- ── DETAIL A3 ── -->
 <div class="detail" id="tab-a3">
   <div class="detail-header">
     <div class="detail-num" style="color:var(--vert)">03</div>
@@ -389,7 +383,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   </div>
 </div>
 
-<!-- ── DETAIL A4 ── -->
 <div class="detail" id="tab-a4">
   <div class="detail-header">
     <div class="detail-num" style="color:var(--jaune)">04</div>
@@ -434,10 +427,8 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   </div>
 </div>
 
-<!-- ── MAP SLIDE ── -->
 <div class="map-slide" id="tab-map">
 
-  <!-- Fiche consignes -->
   <div class="consignes-panel">
     <div class="consignes-header">
       <h2>📍 Ta carte de territoire</h2>
@@ -495,7 +486,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
     <button class="btn-add-pin" onclick="openAddPin()">＋ &nbsp;Poser un pin</button>
   </div>
 
-  <!-- Carte -->
   <div id="map-container">
     <div id="map"></div>
     <div class="map-counter" id="map-counter">
@@ -505,10 +495,7 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
   </div>
 
 </div>
-</div><!-- /content -->
-
-<!-- ── MODAL WIZARD ── -->
-<div class="pin-modal" id="pin-modal">
+</div><div class="pin-modal" id="pin-modal">
   <div class="pin-box">
     <div class="pin-box-head">
       <div class="wiz-tab" id="wiz-step1-tab" onclick="showStep(1)">① Infos du pin</div>
@@ -516,7 +503,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
       <button class="close-btn" onclick="closeAddPin()">×</button>
     </div>
 
-    <!-- Step 1 -->
     <div class="pin-body" id="wiz-step1">
       <label class="field-label">Nom du lieu ou de la personne</label>
       <input class="field-input" id="pin-name" type="text" placeholder="Ex : Mairie de Bayonne, Chez Lucie…" oninput="this.style.borderColor=''" onkeydown="if(event.key==='Enter')wizNext()"/>
@@ -546,7 +532,6 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
       </div>
     </div>
 
-    <!-- Step 2 -->
     <div class="pin-body" id="wiz-step2" style="display:none;">
       <div class="step2-resume" id="wiz-resume">
         <div class="r-dot" id="wiz-resume-dot"></div>
@@ -571,6 +556,40 @@ body{font-family:'DM Sans',sans-serif;background:#f0f2f5;color:var(--noir);heigh
 </div>
 
 <script>
+// ── PRELOADED DATA ──
+const initialPins = [
+  {name: "Lycée Jean Errecart", cat: "comp", note: "305 Rte des Écoles, 64120 Saint-Palais", lat: 43.328, lng: -1.033},
+  {name: "Bilbaka", cat: "solutions", note: "95 Ainaren Karrika, 64120 Saint-Palais", lat: 43.330, lng: -1.035},
+  {name: "Akiloukap", cat: "reseau", note: "18 Rue d'Espagne, 64220 Saint-Jean-Pied-de-Port", lat: 43.163, lng: -1.237},
+  {name: "Les Récoltes du monde", cat: "solutions", note: "2 Rue de l'Église, 64220 Saint-Jean-Pied-de-Port", lat: 43.163, lng: -1.236},
+  {name: "Grottes d'Urdax", cat: "appuis", note: "Barrio Leorlas, 31711 Urdazubi", lat: 43.266, lng: -1.503},
+  {name: "Berritza", cat: "appuis", note: "4 Rue de l'Alava, 64130 Mauléon-Licharre", lat: 43.222, lng: -0.888},
+  {name: "Philippe Mayté (Lecture Paysage)", cat: "comp", note: "Château Fort, 64130 Mauléon-Licharre", lat: 43.220, lng: -0.887},
+  {name: "Goizeko Izarra", cat: "appuis", note: "Place Charles de Gaulle, 64220 Saint-Jean-Pied-de-Port", lat: 43.164, lng: -1.237},
+  {name: "Trainière de Socoa", cat: "appuis", note: "Chemin des Blocs, 64500 Ciboure", lat: 43.385, lng: -1.667},
+  {name: "Grottes de Zugarramurdi", cat: "appuis", note: "Beitikokarrika 18, 31710 Zugarramurdi", lat: 43.268, lng: -1.501},
+  {name: "Odace", cat: "solutions", note: "14 Rue des Frères Barenne, 64130 Mauléon-Licharre", lat: 43.224, lng: -0.890},
+  {name: "AZIA", cat: "reseau", note: "Maison du Patrimoine, 64130 Mauléon-Licharre", lat: 43.223, lng: -0.888},
+  {name: "SPI AERO", cat: "comp", note: "Rue du Sécateur, 64130 Mauléon-Licharre", lat: 43.227, lng: -0.895},
+  {name: "Ataria", cat: "comp", note: "Citadelle, 64220 Saint-Jean-Pied-de-Port", lat: 43.162, lng: -1.235},
+  {name: "MSP Garazi", cat: "solutions", note: "11 Rue des Bergers, 64220 Saint-Jean-Pied-de-Port", lat: 43.165, lng: -1.239},
+  {name: "Lokala", cat: "solutions", note: "630 Route de Bayonne, 64220 Ascarat", lat: 43.168, lng: -1.258},
+  {name: "CPIE Littoral Basque", cat: "appuis", note: "Domaine d'Abbadia, 64700 Hendaye", lat: 43.376, lng: -1.750},
+  {name: "ALDATU", cat: "comp", note: "Lotissement Larraidy, 64240 Hasparren", lat: 43.383, lng: -1.304},
+  {name: "Régis Pochelu", cat: "appuis", note: "1005 Chemin de Xurruta, 64240 Hasparren", lat: 43.381, lng: -1.300},
+  {name: "Château Garroa", cat: "appuis", note: "64240 Mendionde", lat: 43.344, lng: -1.298},
+  {name: "Librairie Margot", cat: "solutions", note: "10 Allée Anne de Neubourg, 64250 Cambo-les-Bains", lat: 43.360, lng: -1.400},
+  {name: "Imprimerie Mendiboure", cat: "comp", note: "8 Rue du Cardinal Lavigerie, 64250 Cambo-les-Bains", lat: 43.359, lng: -1.398},
+  {name: "Groupe IZARRALDE", cat: "comp", note: "45 Allée Théodore Monod, 64210 Bidart", lat: 43.438, lng: -1.590},
+  {name: "Cinéma L'Atalante", cat: "appuis", note: "3 Quai Amiral Antoine Sala, 64100 Bayonne", lat: 43.493, lng: -1.468},
+  {name: "Grandola", cat: "solutions", note: "4 Rue des Tonneliers, 64100 Bayonne", lat: 43.491, lng: -1.474},
+  {name: "Office de Tourisme de Bayonne", cat: "solutions", note: "25 Place de la Liberté, 64100 Bayonne", lat: 43.492, lng: -1.475},
+  {name: "Mairie de Tarnos", cat: "solutions", note: "1 Boulevard de la Libération, 40220 Tarnos", lat: 43.540, lng: -1.463},
+  {name: "Corbo Course", cat: "comp", note: "9B Avenue de la Légion Tchèque, 64100 Bayonne", lat: 43.497, lng: -1.470},
+  {name: "Tube à essai / PTCE", cat: "comp", note: "23 Rue Hélène Boucher, 40220 Tarnos", lat: 43.535, lng: -1.465},
+  {name: "Métrolocco", cat: "solutions", note: "23 Rue Hélène Boucher, 40220 Tarnos", lat: 43.535, lng: -1.465}
+];
+
 // ── TABS ──
 function goTab(id, el, activeClass) {
   document.querySelectorAll('.overview,.detail,.map-slide').forEach(x=>{
@@ -605,7 +624,7 @@ var CAT_LABELS={reseau:'Réseau humain',comp:'Compétences',solutions:'Solutions
 
 function initMap(){
   if(map) return;
-  map = L.map('map',{zoomControl:true}).setView([43.49,-1.47],11);
+  map = L.map('map',{zoomControl:true}).setView([43.35,-1.35],10);
   L.tileLayer('https://{s}.tile.openstreetmap.fr/osmfr/{z}/{x}/{y}.png',{
     maxZoom:19,
     attribution:'© OpenStreetMap France'
@@ -617,6 +636,11 @@ function initMap(){
       c.style.display='block';
       c.textContent='Position sélectionnée sur la carte — clique sur "Poser le pin ici" pour confirmer.';
     }
+  });
+
+  // Chargement des données pré-enregistrées
+  initialPins.forEach(function(p){
+    addPin(p.name, p.cat, p.note, L.latLng(p.lat, p.lng));
   });
 }
 
